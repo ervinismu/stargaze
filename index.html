@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stargaze — GitHub Stars Graph</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Landing -->
+<div id="landing">
+  <div class="landing-box">
+    <div class="landing-eyebrow">GitHub Stars Explorer</div>
+    <h1 class="landing-title">Star<span>gaze</span></h1>
+    <p class="landing-sub">Turn your starred repos into an interactive knowledge graph — clustered by topics, colored by language.</p>
+    <div class="field-group">
+      <input type="text" id="input-username" placeholder="GitHub username" autocomplete="off" autocapitalize="none" spellcheck="false" />
+      <input type="password" id="input-token" placeholder="GitHub token (optional — for 600+ repos)" />
+    </div>
+    <div id="error-box" class="error-box" style="display:none;"></div>
+    <button class="btn-primary" id="btn-load">Build Graph →</button>
+    <div class="landing-hint">
+      Without token: up to 600 repos · 60 req/hr limit<br>
+      With token: up to 2000 repos · no special scopes needed<br><br>
+      Generate at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a>
+    </div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <div id="header">
+    <span class="header-logo">Star<span>gaze</span></span>
+    <div class="hdiv"></div>
+    <span class="header-meta" id="header-meta"></span>
+    <input type="text" id="search-input" placeholder="Search by name, topic, language…" autocomplete="off" autocapitalize="none" />
+    <button class="btn-ghost" id="btn-reset">← New search</button>
+  </div>
+  <div id="body">
+    <div id="sidebar">
+      <div class="sidebar-label">Languages</div>
+      <div id="lang-list"></div>
+      <div class="stats-block">
+        <div class="sidebar-label">Stats</div>
+        <div id="stats-list"></div>
+      </div>
+    </div>
+    <div id="canvas">
+      <svg id="svg"></svg>
+      <div id="hint">scroll to zoom · drag to pan · drag node to pin · tap node for details</div>
+    </div>
+    <div id="detail">
+      <div class="detail-header">
+        <div class="detail-name" id="d-name"></div>
+        <button class="detail-close" id="d-close">×</button>
+      </div>
+      <div class="detail-sub" id="d-sub"></div>
+      <div class="detail-desc" id="d-desc"></div>
+      <div class="detail-stats">
+        <div class="detail-stat"><div class="detail-stat-val" id="d-stars"></div><div class="detail-stat-label">stars</div></div>
+        <div class="detail-stat"><div class="detail-stat-val" id="d-forks"></div><div class="detail-stat-label">forks</div></div>
+        <div class="detail-stat">
+          <div class="detail-stat-val">
+            <div class="detail-lang"><div class="lang-dot" id="d-lang-dot"></div><span id="d-lang"></span></div>
+          </div>
+          <div class="detail-stat-label">language</div>
+        </div>
+      </div>
+      <div class="topic-wrap" id="d-topics-wrap">
+        <div class="sidebar-label">Topics</div>
+        <div class="topic-pills" id="d-topics"></div>
+      </div>
+      <div class="detail-date" id="d-date"></div>
+      <a class="btn-open" id="d-link" target="_blank" rel="noreferrer">Open on GitHub →</a>
+      <button class="btn-similar" id="d-similar">Find similar repos →</button>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip">
+  <div class="tip-name" id="tip-name"></div>
+  <div class="tip-meta">
+    <span class="tip-lang"><span class="lang-dot" id="tip-dot"></span><span id="tip-lang"></span></span>
+    <span id="tip-stars"></span>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
