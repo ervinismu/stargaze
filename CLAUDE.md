@@ -13,9 +13,9 @@ Open `index.html` directly in a browser — no build step needed. D3 and fonts l
 ## File Structure
 
 ```
-index.html          — markup only (two phases: #landing and #app)
+index.html          — markup only (three phases: #loading, #landing, #app)
 css/
-  base.css          — CSS variables (:root), reset, html/body, scrollbar, app shell layout
+  base.css          — CSS variables (:root), reset, html/body, scrollbar, app shell, loading overlay
   landing.css       — landing page, form inputs, buttons, error box
   header.css        — top bar, search input
   sidebar.css       — filter columns, lang/topic items, active chips, toggles, stats
@@ -25,17 +25,35 @@ css/
 js/
   config.js         — LANG_COLORS map, langColor(), nodeR(), fmtNum()
   state.js          — all mutable state variables and cached DOM refs
-  api.js            — loadRepos(), buildGraph()
-  sidebar.js        — showApp(), updateHeaderMeta(), setChip()
+  api.js            — loadRepos(), buildGraph(), slimRepo(), expandRepo(), REPO_CACHE_KEY
+  sidebar.js        — showApp(), updateHeaderMeta(), setChip(), refreshTopicList()
   tooltip.js        — showTooltip(), moveTooltip(), hideTooltip()
   detail.js         — openDetail(), closeDetail()
   renderer.js       — rebuildGraph() — canvas drawing, simulation, zoom, drag
-  events.js         — all top-level event listener wiring
+  events.js         — all top-level event listener wiring + session auto-restore
 ```
 
-Scripts and stylesheets are loaded in dependency order via plain `<script>` / `<link>` tags — no bundler or build step.
+Scripts and stylesheets are loaded in dependency order via plain `<script defer>` / `<link>` tags — no bundler or build step.
 
 ## Architecture
+
+### Three UI phases
+
+1. **`#loading`** — fullscreen spinner, shown only when restoring from localStorage cache (controlled by `html.restoring` class added by an inline script in `<head>` before deferred scripts run)
+2. **`#landing`** — username/token form, shown on first visit or after Reset
+3. **`#app`** — the graph view, shown after a successful load
+
+`showApp()` removes the `restoring` class, hides landing, and adds `.visible` to `#app`.
+
+### Session persistence (`js/api.js`, `js/events.js`)
+
+On successful load, the username is saved to `localStorage('stargaze_username')` and the repo data is saved in compressed form to `localStorage(REPO_CACHE_KEY)`. On next page load, `events.js` reads the saved username, calls `loadRepos()`, which reads the cache and skips the API fetch entirely.
+
+**Cache compression** — raw API responses are large. `slimRepo()` stores only the fields the app uses, with short single-letter keys (`i/n/f/d/l/s/k/t/a`). `expandRepo()` is the inverse, reconstructing `html_url` from `full_name` and `owner` from `full_name.split('/')[0]`. See the key mapping comment in `api.js` before modifying either function.
+
+**Re-fetch button** — `#btn-refetch` in the header calls `loadRepos(true)` which bypasses cache and fetches fresh data.
+
+**Reset** — clears both localStorage keys and returns to landing.
 
 ### State
 
@@ -43,7 +61,7 @@ All mutable state lives as plain `let` variables in `js/state.js`, accessible gl
 
 | Variable | Purpose |
 |---|---|
-| `allRepos` | Raw API response array |
+| `allRepos` | Repo array (raw from API or expanded from cache) |
 | `graphData` | `{ nodes, links, topicMap, langMap }` |
 | `filterLang` | Active language filter (`null` = none) |
 | `filterTopic` | Active topic filter (`null` = none) |
@@ -57,10 +75,6 @@ All mutable state lives as plain `let` variables in `js/state.js`, accessible gl
 | `currentZoom` | Reference to the active D3 zoom behavior |
 | `zoomCanvas` | Reference to the active canvas element |
 
-### Two UI phases
-
-Toggled by showing/hiding `#landing` and adding `.visible` to `#app`.
-
 ### Renderer (`js/renderer.js`)
 
 Uses Canvas 2D (not SVG) for performance with 1000+ nodes. Key design decisions:
@@ -70,11 +84,12 @@ Uses Canvas 2D (not SVG) for performance with 1000+ nodes. Key design decisions:
 - Simulation pre-warmed with synchronous `tick()` calls before first render
 - Tick-skipping for large graphs (skip every 2nd/3rd DOM repaint)
 - `AbortController` cleans up canvas event listeners on each rebuild
-- `ResizeObserver` redraws on container resize
+- `ResizeObserver` with `requestAnimationFrame` debounce redraws on container resize
+- After attaching the zoom behavior, `zoomBehavior.transform` is explicitly reset to `d3.zoomIdentity` to sync `canvas.__zoom` with our `transform` variable — prevents a pan-jump bug when `rebuildGraph()` is called mid-session (e.g. after a filter change)
 
 ### Graph construction (`js/api.js` — `buildGraph`)
 
-- Nodes: one per repo
+- Nodes: one per repo, each has a `_searchKey` (pre-lowercased concatenation of name, description, topics, language, full_name) for fast search matching
 - Links: repos sharing a topic are connected (topic must have 2–25 repos; capped at 12 connections per topic to avoid hairball)
 - `topicMap` / `langMap`: topic/language → array of node indices
 
@@ -87,7 +102,7 @@ Uses Canvas 2D (not SVG) for performance with 1000+ nodes. Key design decisions:
 
 ### Filters
 
-Language and topic filters are combinable (AND logic). Both are applied in `rebuildGraph()` before constructing `simNodes` / `simLinks`. Active selections are shown as pill chips floating over the canvas top-left (`#active-filters`).
+Language and topic filters are combinable (AND logic). Topic list is dependent on the selected language — `refreshTopicList()` rebuilds it from `graphData.langMap`. Both filters are applied in `rebuildGraph()` before constructing `simNodes` / `simLinks`. Active selections are shown as pill chips floating over the canvas top-left (`#active-filters`).
 
 ## GitHub API Usage
 
