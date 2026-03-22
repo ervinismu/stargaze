@@ -233,6 +233,7 @@ function rebuildGraph(){
       wasDragging = true;
       const [wx, wy] = transform.invert([e.offsetX, e.offsetY]);
       dragNode.fx = wx; dragNode.fy = wy;
+      moveTooltip(e);
       return;
     }
     const found = findNode(e.offsetX, e.offsetY);

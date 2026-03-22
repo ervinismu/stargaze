@@ -31,15 +31,6 @@ function openDetail(n){
     topicsWrap.style.display = 'none';
   }
 
-  document.getElementById('d-similar').onclick = () => {
-    if(n.topics[0]){
-      document.getElementById('search-input').value = n.topics[0];
-      searchVal = n.topics[0];
-      rebuildGraph();
-    }
-    closeDetail();
-  };
-
   document.getElementById('detail').classList.add('visible');
 }
 
