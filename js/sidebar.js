@@ -46,7 +46,7 @@ function refreshTopicList(){
           setChip('topic-chip', null);
           rebuildGraph();
         });
-        if(filterTopic) el.scrollIntoView({ block: 'nearest' });
+        if(filterTopic) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         rebuildGraph();
       });
       topicList.appendChild(el);
@@ -55,6 +55,7 @@ function refreshTopicList(){
 
 // ── App shell population ──
 function showApp(username){
+  document.documentElement.classList.remove('restoring');
   landing.style.display = 'none';
   appEl.classList.add('visible');
 
@@ -87,7 +88,7 @@ function showApp(username){
           refreshTopicList();
           rebuildGraph();
         });
-        if(filterLang) el.scrollIntoView({ block: 'nearest' });
+        if(filterLang) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         rebuildGraph();
       });
       langList.appendChild(el);

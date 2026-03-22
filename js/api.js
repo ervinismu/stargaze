@@ -1,13 +1,89 @@
+const REPO_CACHE_KEY = 'stargaze_repos_v1';
+
+// ── Cache compression helpers ──
+// To keep localStorage small we store a minimal "slim" shape with short keys.
+// expandRepo() is the inverse — it rebuilds the full shape expected by buildGraph().
+//
+// Key mapping:
+//   i = id                 (number)
+//   n = name               (string)
+//   f = full_name          (string, "owner/repo") — html_url and owner are derived from this
+//   d = description        (string, truncated to 120 chars — we never display more)
+//   l = language           (string | null)
+//   s = stargazers_count   (number)
+//   k = forks_count        (number)
+//   t = topics             (string[])
+//   a = updated_at         (ISO string)
+//
+// Fields NOT stored (reconstructed on expand):
+//   html_url  → "https://github.com/" + full_name
+//   owner     → full_name.split('/')[0]
+function slimRepo(r){
+  return {
+    i: r.id,
+    n: r.name,
+    f: r.full_name,
+    d: (r.description || '').slice(0, 120),
+    l: r.language || null,
+    s: r.stargazers_count,
+    k: r.forks_count,
+    t: Array.isArray(r.topics) ? r.topics : [],
+    a: r.updated_at,
+  };
+}
+
+function expandRepo(c){
+  return {
+    id:               c.i,
+    name:             c.n,
+    full_name:        c.f,
+    html_url:         `https://github.com/${c.f}`,
+    description:      c.d || '',
+    language:         c.l || null,
+    stargazers_count: c.s,
+    forks_count:      c.k,
+    topics:           c.t || [],
+    updated_at:       c.a,
+    owner:            { login: c.f.split('/')[0] },
+  };
+}
+
 // ── GitHub API fetch ──
-async function loadRepos(){
+async function loadRepos(forceRefetch = false){
   const username = document.getElementById('input-username').value.trim();
   const token    = document.getElementById('input-token').value.trim();
   if(!username) return;
 
-  const errBox = document.getElementById('error-box');
-  const btn    = document.getElementById('btn-load');
+  const errBox     = document.getElementById('error-box');
+  const btn        = document.getElementById('btn-load');
+  const inpUser    = document.getElementById('input-username');
+  const inpToken   = document.getElementById('input-token');
+  const refetchBtn = document.getElementById('btn-refetch');
   errBox.style.display = 'none';
-  btn.disabled = true;
+
+  // ── Try cache first ──
+  if(!forceRefetch){
+    try {
+      const raw = localStorage.getItem(REPO_CACHE_KEY);
+      if(raw){
+        const cache = JSON.parse(raw);
+        if(cache.username === username && Array.isArray(cache.repos) && cache.repos.length){
+          allRepos  = cache.repos.map(expandRepo);
+          graphData = buildGraph(allRepos);
+          showApp(username);
+          return;
+        }
+      }
+    } catch(e){ /* corrupted cache — fall through to fetch */ }
+  }
+
+  // ── Fetch from GitHub API ──
+  const inApp = appEl.classList.contains('visible');
+  if(inApp){
+    if(refetchBtn){ refetchBtn.disabled = true; refetchBtn.textContent = 'Fetching…'; }
+  } else {
+    btn.disabled = true; inpUser.disabled = true; inpToken.disabled = true;
+  }
 
   const headers = { 'Accept': 'application/vnd.github.v3+json' };
   if(token) headers['Authorization'] = 'token ' + token;
@@ -18,7 +94,7 @@ async function loadRepos(){
 
   try {
     while(page <= maxPages){
-      btn.textContent = `Fetching… (${allRepos.length} loaded)`;
+      if(!inApp) btn.textContent = `Fetching… (${allRepos.length} loaded)`;
       const url = `https://api.github.com/users/${encodeURIComponent(username)}/starred?per_page=100&page=${page}`;
       const res = await fetch(url, { headers });
 
@@ -38,13 +114,23 @@ async function loadRepos(){
 
     if(!allRepos.length) throw new Error('No starred repos found for this user.');
 
+    try {
+      localStorage.setItem(REPO_CACHE_KEY, JSON.stringify({ username, repos: allRepos.map(slimRepo) }));
+    } catch(e){ /* quota exceeded — cache skipped */ }
+
     graphData = buildGraph(allRepos);
+    localStorage.setItem('stargaze_username', username);
+    if(refetchBtn){ refetchBtn.disabled = false; refetchBtn.textContent = '↻ Re-fetch'; }
     showApp(username);
   } catch(e){
     errBox.textContent = e.message;
     errBox.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Build Graph →';
+    if(inApp){
+      if(refetchBtn){ refetchBtn.disabled = false; refetchBtn.textContent = '↻ Re-fetch'; }
+    } else {
+      btn.disabled = false; btn.textContent = 'Build Graph →';
+      inpUser.disabled = false; inpToken.disabled = false;
+    }
   }
 }
 
@@ -63,6 +149,7 @@ function buildGraph(repos){
     updatedAt:   r.updated_at,
     color:       langColor(r.language),
     owner:       r.owner?.login || '',
+    _searchKey:  `${r.name} ${r.description||''} ${(Array.isArray(r.topics)?r.topics:[]).join(' ')} ${r.language||''} ${r.full_name}`.toLowerCase(),
   }));
 
   const topicMap = {}, langMap = {};

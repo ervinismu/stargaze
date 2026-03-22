@@ -1,3 +1,6 @@
+/* Hide landing immediately when a previous session is detected — prevents flash on refresh */
+html.restoring #landing { display: none !important; }
+
 #landing {
   display: flex; align-items: center; justify-content: center;
   height: 100vh; padding: 24px;

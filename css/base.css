@@ -31,6 +31,30 @@ html, body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border3); border-radius: 2px; }
 
+/* ── Loading overlay (shown during cache restore on refresh) ── */
+#loading {
+  display: none;
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 999;
+  align-items: center; justify-content: center; flex-direction: column;
+  gap: 20px;
+}
+html.restoring #loading  { display: flex; }
+html.restoring #landing  { display: none; }
+
+.loading-logo           { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
+.loading-logo span      { color: var(--yellow); }
+.loading-spinner        {
+  width: 28px; height: 28px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+.loading-text           { font-size: 11px; color: var(--text4); }
+@keyframes spin         { to { transform: rotate(360deg); } }
+
 /* ── App shell ── */
 #app         { display: none; height: 100vh; flex-direction: column; }
 #app.visible { display: flex; }

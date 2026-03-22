@@ -4,7 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Stargaze — GitHub Stars Graph</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<!-- Runs immediately (no defer) to suppress landing flash when restoring from cache -->
+<script>if(localStorage.getItem('stargaze_username'))document.documentElement.classList.add('restoring');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="css/base.css" />
@@ -16,6 +18,13 @@
 <link rel="stylesheet" href="css/tooltip.css" />
 </head>
 <body>
+
+<!-- Loading overlay (cache restore) -->
+<div id="loading">
+  <div class="loading-logo">Star<span>gaze</span></div>
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading your graph…</div>
+</div>
 
 <!-- Landing -->
 <div id="landing">
@@ -44,6 +53,7 @@
     <div class="hdiv"></div>
     <span class="header-meta" id="header-meta"></span>
     <input type="text" id="search-input" placeholder="Search by name, topic, language…" autocomplete="off" autocapitalize="none" />
+    <button class="btn-ghost" id="btn-refetch">↻ Re-fetch</button>
     <button class="btn-ghost" id="btn-reset">← Reset</button>
   </div>
   <div id="body">
@@ -83,7 +93,7 @@
         <button id="btn-zoom-out" title="Zoom out">−</button>
         <button id="btn-zoom-fit" title="Fit to screen">⊡</button>
       </div>
-      <div id="hint">scroll to zoom · drag to pan · drag node to pin · tap node for details</div>
+      <div id="hint">scroll to zoom · drag background to move · drag node to reposition · tap node for details</div>
       <div id="footer">made with ♥ by <a href="https://github.com/ervinismu" target="_blank" rel="noreferrer">@ervinismu</a></div>
     </div>
     <div id="detail">
@@ -121,13 +131,13 @@
   </div>
 </div>
 
-<script src="js/config.js"></script>
-<script src="js/state.js"></script>
-<script src="js/api.js"></script>
-<script src="js/sidebar.js"></script>
-<script src="js/tooltip.js"></script>
-<script src="js/detail.js"></script>
-<script src="js/renderer.js"></script>
-<script src="js/events.js"></script>
+<script src="js/config.js" defer></script>
+<script src="js/state.js" defer></script>
+<script src="js/api.js" defer></script>
+<script src="js/sidebar.js" defer></script>
+<script src="js/tooltip.js" defer></script>
+<script src="js/detail.js" defer></script>
+<script src="js/renderer.js" defer></script>
+<script src="js/events.js" defer></script>
 </body>
 </html>

@@ -1,3 +1,13 @@
+// ── Auto-restore last session ──
+const _savedUser = localStorage.getItem('stargaze_username');
+if(_savedUser){
+  document.getElementById('input-username').value = _savedUser;
+  loadRepos();
+}
+
+// ── Re-fetch ──
+document.getElementById('btn-refetch').addEventListener('click', () => loadRepos(true));
+
 // ── Landing ──
 document.getElementById('btn-load').addEventListener('click', loadRepos);
 document.getElementById('input-username').addEventListener('keydown', e => { if(e.key==='Enter') loadRepos(); });
@@ -26,6 +36,8 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 
   appEl.classList.remove('visible');
   landing.style.display = 'flex';
+  localStorage.removeItem('stargaze_username');
+  localStorage.removeItem(REPO_CACHE_KEY);
   document.getElementById('input-username').value = '';
   document.getElementById('input-token').value    = '';
   document.getElementById('btn-load').disabled    = false;

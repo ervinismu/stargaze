@@ -12,11 +12,7 @@ function rebuildGraph(){
   const visNodes = allNodes.filter(n => {
     if(filterLang  && n.language !== filterLang) return false;
     if(filterTopic && !n.topics.includes(filterTopic)) return false;
-    if(q) return n.name.toLowerCase().includes(q)        ||
-                 n.description.toLowerCase().includes(q) ||
-                 n.topics.some(t => t.includes(q))       ||
-                 n.language.toLowerCase().includes(q)    ||
-                 n.fullName.toLowerCase().includes(q);
+    if(q) return n._searchKey.includes(q);
     return true;
   });
 
@@ -214,6 +210,10 @@ function rebuildGraph(){
     .on('zoom', e => { transform = e.transform; draw(); });
 
   d3.select(canvas).call(zoomBehavior).on('dblclick.zoom', null);
+  // Sync D3's stored canvas.__zoom to our reset transform — prevents jump on next pan
+  // when rebuildGraph() is called mid-session (e.g. filter change) and canvas.__zoom
+  // still holds the old pan position while our `transform` was reset to identity.
+  d3.select(canvas).call(zoomBehavior.transform, d3.zoomIdentity);
   currentZoom = zoomBehavior;
   zoomCanvas  = canvas;
 
@@ -273,10 +273,14 @@ function rebuildGraph(){
   }, { signal });
 
   // ── Resize ──
+  let resizeRaf = null;
   resizeObs = new ResizeObserver(() => {
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    draw();
+    if(resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      canvas.width  = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      draw();
+    });
   });
   resizeObs.observe(canvas);
 }
