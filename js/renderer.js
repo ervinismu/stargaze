@@ -29,13 +29,17 @@ function rebuildGraph(){
   const canvas = document.getElementById('graph-canvas');
   canvas.width  = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
-  const ctx = canvas.getContext('2d');
+  // alpha:false lets the browser skip alpha compositing — safe since background is always solid
+  const ctx = canvas.getContext('2d', { alpha: false });
 
-  let transform   = d3.zoomIdentity;
-  let quadtree    = null;
-  let hoveredNode = null;
-  let dragNode    = null;
-  let wasDragging = false;
+  let transform    = d3.zoomIdentity;
+  let quadtree     = null;
+  let hoveredNode  = null;
+  let dragNode     = null;
+  let wasDragging  = false;
+  let zoomRaf      = null;
+  // Viewport bounds in world space, updated once per draw() and shared across sub-functions
+  let vx0 = 0, vy0 = 0, vx1 = 0, vy1 = 0;
 
   function buildQuadtree(){
     quadtree = d3.quadtree().x(d=>d.x).y(d=>d.y).addAll(simNodes);
@@ -49,30 +53,23 @@ function rebuildGraph(){
 
   // ── Draw functions ──
   function drawGrid(){
-    const W = canvas.width, H = canvas.height;
     let spacing = 50;
     while(spacing * transform.k < 20) spacing *= 2;
     while(spacing * transform.k > 80) spacing /= 2;
     if(spacing * transform.k < 10) return;
 
-    const dotR  = 1.2 / transform.k;
-    const wx0   = -transform.x / transform.k;
-    const wy0   = -transform.y / transform.k;
-    const wx1   = (W - transform.x) / transform.k;
-    const wy1   = (H - transform.y) / transform.k;
-    const startX = Math.floor(wx0 / spacing) * spacing;
-    const startY = Math.floor(wy0 / spacing) * spacing;
+    const dotR   = 1.2 / transform.k;
+    const startX = Math.floor(vx0 / spacing) * spacing;
+    const startY = Math.floor(vy0 / spacing) * spacing;
 
+    // fillRect is significantly faster than arc() for many small dots
     ctx.fillStyle   = '#1e2d40';
     ctx.globalAlpha = 0.9;
-    ctx.beginPath();
-    for(let x = startX; x <= wx1 + spacing; x += spacing){
-      for(let y = startY; y <= wy1 + spacing; y += spacing){
-        ctx.moveTo(x + dotR, y);
-        ctx.arc(x, y, dotR, 0, Math.PI * 2);
+    for(let x = startX; x <= vx1 + spacing; x += spacing){
+      for(let y = startY; y <= vy1 + spacing; y += spacing){
+        ctx.fillRect(x - dotR, y - dotR, dotR * 2, dotR * 2);
       }
     }
-    ctx.fill();
     ctx.globalAlpha = 1;
   }
 
@@ -82,8 +79,14 @@ function rebuildGraph(){
     ctx.lineWidth   = 0.9 / transform.k;
     ctx.globalAlpha = 0.75;
     for(const l of simLinks){
-      ctx.moveTo(l.source.x, l.source.y);
-      ctx.lineTo(l.target.x, l.target.y);
+      const sx = l.source.x, sy = l.source.y, tx = l.target.x, ty = l.target.y;
+      // Skip links where both endpoints are clearly off-screen on the same side
+      if(sx < vx0 && tx < vx0) continue;
+      if(sx > vx1 && tx > vx1) continue;
+      if(sy < vy0 && ty < vy0) continue;
+      if(sy > vy1 && ty > vy1) continue;
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(tx, ty);
     }
     ctx.stroke();
   }
@@ -94,6 +97,7 @@ function rebuildGraph(){
     const byColor = new Map();
     for(const n of simNodes){
       if(n === hoveredNode) continue;
+      if(n.x < vx0 - 12 || n.x > vx1 + 12 || n.y < vy0 - 12 || n.y > vy1 + 12) continue;
       const list = byColor.get(n.color);
       if(list) list.push(n); else byColor.set(n.color, [n]);
     }
@@ -124,18 +128,13 @@ function rebuildGraph(){
   }
 
   function drawLabels(){
-    if(!showLabels) return;
-    const vx0 = -transform.x / transform.k;
-    const vy0 = -transform.y / transform.k;
-    const vx1 = (canvas.width  - transform.x) / transform.k;
-    const vy1 = (canvas.height - transform.y) / transform.k;
-
+    // Skip labels when zoomed out too far — they'd be unreadable anyway
+    if(!showLabels || transform.k < 0.25) return;
     ctx.font         = `${10 / transform.k}px 'JetBrains Mono', monospace`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
     ctx.globalAlpha  = 1;
-    ctx.shadowColor  = '#0b0c10';
-    ctx.shadowBlur   = 4 / transform.k;
+    // shadowBlur is one of the most expensive canvas operations — skipped for performance
 
     for(const n of simNodes){
       if(n.x < vx0-60 || n.x > vx1+60 || n.y < vy0-60 || n.y > vy1+60) continue;
@@ -146,11 +145,15 @@ function rebuildGraph(){
         n.y + nodeR(n) + 3 / transform.k
       );
     }
-    ctx.shadowBlur = 0;
   }
 
   function draw(){
     const W = canvas.width, H = canvas.height;
+    // Update shared viewport bounds in world space — used by all draw sub-functions for culling
+    vx0 = -transform.x / transform.k;
+    vy0 = -transform.y / transform.k;
+    vx1 = (W - transform.x) / transform.k;
+    vy1 = (H - transform.y) / transform.k;
     ctx.clearRect(0, 0, W, H);
     ctx.save();
     ctx.translate(transform.x, transform.y);
@@ -207,7 +210,13 @@ function rebuildGraph(){
       if(e.type === 'mousedown') return !findNode(e.offsetX, e.offsetY);
       return !e.button;
     })
-    .on('zoom', e => { transform = e.transform; draw(); });
+    .on('zoom', e => {
+      transform = e.transform;
+      // Throttle redraws to once per animation frame — scroll events fire far
+      // faster than the screen refreshes (10-20×/sec vs 60fps), causing wasted
+      // draw calls that block the main thread and cause zoom lag on large graphs.
+      if(!zoomRaf) zoomRaf = requestAnimationFrame(() => { zoomRaf = null; draw(); });
+    });
 
   d3.select(canvas).call(zoomBehavior).on('dblclick.zoom', null);
   // Sync D3's stored canvas.__zoom to our reset transform — prevents jump on next pan
