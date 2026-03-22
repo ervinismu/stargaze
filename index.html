@@ -42,15 +42,41 @@
   </div>
   <div id="body">
     <div id="sidebar">
-      <div class="sidebar-label">Languages</div>
-      <div id="lang-list"></div>
+      <div class="filter-columns">
+        <div class="filter-col">
+          <div class="sidebar-label">Languages</div>
+          <div id="lang-list"></div>
+        </div>
+        <div class="filter-divider"></div>
+        <div class="filter-col">
+          <div class="sidebar-label">Topics</div>
+          <div id="topic-list"></div>
+        </div>
+      </div>
       <div class="stats-block">
         <div class="sidebar-label">Stats</div>
         <div id="stats-list"></div>
       </div>
+      <div class="stats-block">
+        <div class="sidebar-label">Display</div>
+        <label class="toggle-row">
+          <span class="toggle-label">Labels</span>
+          <input type="checkbox" id="toggle-labels" checked />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
     </div>
     <div id="canvas">
-      <svg id="svg"></svg>
+      <canvas id="graph-canvas"></canvas>
+      <div id="active-filters">
+        <div id="lang-chip"></div>
+        <div id="topic-chip"></div>
+      </div>
+      <div id="zoom-controls">
+        <button id="btn-zoom-in"  title="Zoom in">+</button>
+        <button id="btn-zoom-out" title="Zoom out">−</button>
+        <button id="btn-zoom-fit" title="Fit to screen">⊡</button>
+      </div>
       <div id="hint">scroll to zoom · drag to pan · drag node to pin · tap node for details</div>
     </div>
     <div id="detail">
