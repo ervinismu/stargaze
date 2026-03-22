@@ -29,7 +29,7 @@ document.getElementById('btn-reset').addEventListener('click', () => {
   document.getElementById('input-username').value = '';
   document.getElementById('input-token').value    = '';
   document.getElementById('btn-load').disabled    = false;
-  document.getElementById('btn-load').textContent = 'Build Graph →';
+  document.getElementById('btn-load').textContent  = 'Build Graph →';
   document.getElementById('error-box').style.display = 'none';
   closeDetail();
 });
