@@ -1,0 +1,37 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:             #0b0c10;
+  --surface:        #0d0e14;
+  --border:         #161b22;
+  --border2:        #21262d;
+  --border3:        #30363d;
+  --text:           #e6edf3;
+  --text2:          #8b949e;
+  --text3:          #6e7681;
+  --text4:          #484f58;
+  --accent:         #58a6ff;
+  --green:          #238636;
+  --green2:         #2ea043;
+  --yellow:         #f7df1e;
+  --danger:         #f85149;
+  --danger-bg:      #200d0d;
+  --danger-border:  #5c2020;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border3); border-radius: 2px; }
+
+/* ── App shell ── */
+#app         { display: none; height: 100vh; flex-direction: column; }
+#app.visible { display: flex; }
+#body        { flex: 1; display: flex; min-height: 0; }

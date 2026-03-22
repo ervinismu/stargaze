@@ -1,0 +1,12 @@
+#canvas        { flex: 1; position: relative; min-width: 0; overflow: hidden; }
+#canvas canvas { width: 100%; height: 100%; display: block; }
+#hint          { position: absolute; bottom: 14px; left: 14px; font-size: 10px; color: var(--border3); pointer-events: none; line-height: 1.8; }
+
+#zoom-controls { position: absolute; bottom: 14px; right: 14px; display: flex; flex-direction: column; gap: 4px; }
+#zoom-controls button {
+  width: 28px; height: 28px; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 6px; color: var(--text2); font-size: 16px; line-height: 1;
+  cursor: pointer; font-family: inherit; transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+#zoom-controls button:hover { background: var(--border); color: var(--text); border-color: var(--border3); }

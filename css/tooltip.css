@@ -1,0 +1,9 @@
+#tooltip {
+  position: fixed; background: var(--surface); border: 1px solid var(--border3);
+  border-radius: 7px; padding: 7px 11px; font-size: 12px; color: var(--text);
+  pointer-events: none; z-index: 9999; max-width: 220px; line-height: 1.5;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5); display: none;
+}
+#tooltip .tip-name { font-weight: 600; }
+#tooltip .tip-meta { color: var(--text2); font-size: 11px; display: flex; gap: 10px; margin-top: 2px; }
+#tooltip .tip-lang { display: flex; align-items: center; gap: 4px; }

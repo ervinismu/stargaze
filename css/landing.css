@@ -1,0 +1,33 @@
+#landing {
+  display: flex; align-items: center; justify-content: center;
+  height: 100vh; padding: 24px;
+}
+.landing-box    { width: 100%; max-width: 460px; }
+.landing-eyebrow { font-size: 11px; letter-spacing: 0.25em; color: var(--text4); text-transform: uppercase; margin-bottom: 10px; }
+.landing-title  { font-size: 38px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+.landing-title span { color: var(--yellow); }
+.landing-sub    { font-size: 13px; color: var(--text3); margin-top: 10px; line-height: 1.75; }
+.landing-hint   { font-size: 11px; color: var(--text4); margin-top: 18px; line-height: 1.85; border-top: 1px solid var(--border2); padding-top: 16px; }
+.landing-hint a { color: var(--accent); text-decoration: none; }
+
+.field-group { display: flex; flex-direction: column; gap: 10px; margin: 32px 0 18px; }
+.field-group input {
+  padding: 12px 14px; background: var(--surface); border: 1px solid var(--border2);
+  border-radius: 7px; color: var(--text); font-family: inherit; font-size: 14px;
+  outline: none; transition: border-color 0.15s;
+}
+.field-group input:focus       { border-color: var(--accent); }
+.field-group input::placeholder { color: var(--text4); }
+
+.btn-primary {
+  width: 100%; padding: 12px; background: var(--green); border: none;
+  border-radius: 7px; color: var(--text); font-family: inherit; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: background 0.15s; letter-spacing: 0.02em;
+}
+.btn-primary:hover    { background: var(--green2); }
+.btn-primary:disabled { background: #1c2128; color: var(--text3); cursor: default; }
+
+.error-box {
+  padding: 10px 14px; background: var(--danger-bg); border: 1px solid var(--danger-border);
+  border-radius: 7px; color: var(--danger); font-size: 13px; margin-bottom: 14px; line-height: 1.5;
+}
