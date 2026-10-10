@@ -13,10 +13,51 @@
   --accent:         #58a6ff;
   --green:          #238636;
   --green2:         #2ea043;
-  --yellow:         #f7df1e;
   --danger:         #f85149;
   --danger-bg:      #200d0d;
   --danger-border:  #5c2020;
+  /* component colors (themeable) */
+  --hover-bg:       #1c2128;
+  --active-border:  #2d333b;
+  --chip-bg:        #0d1117cc;
+  --chip-border:    #2d4a7a;
+  --pill-hover:     #162032;
+  --glow:           #11182a;
+  /* canvas colors (read by renderer.js / starfield.js via themeColors()) */
+  --grid:           #1e2d40;
+  --link:           #1e2d40;
+  --label:          #8b949e;
+  --label-hi:       #e6edf3;
+  --star:           #e6edf3;
+}
+
+[data-theme="light"] {
+  --bg:             #f6f8fa;
+  --surface:        #ffffff;
+  --border:         #eaeef2;
+  --border2:        #d0d7de;
+  --border3:        #afb8c1;
+  --text:           #1f2328;
+  --text2:          #57606a;
+  --text3:          #6e7781;
+  --text4:          #8c959f;
+  --accent:         #0969da;
+  --green:          #1a7f37;
+  --green2:         #1f883d;
+  --danger:         #cf222e;
+  --danger-bg:      #ffebe9;
+  --danger-border:  #ffb3ad;
+  --hover-bg:       #f0f3f6;
+  --active-border:  #d0d7de;
+  --chip-bg:        #ffffffcc;
+  --chip-border:    #b6cff7;
+  --pill-hover:     #eaf2fc;
+  --glow:           #dbe8f8;
+  --grid:           #d8dee4;
+  --link:           #d8dee4;
+  --label:          #6e7781;
+  --label-hi:       #1f2328;
+  --star:           #9aa7b4;
 }
 
 html, body {
@@ -44,7 +85,10 @@ html.restoring #loading  { display: flex; }
 html.restoring #landing  { display: none; }
 
 .loading-logo           { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
-.loading-logo span      { color: var(--yellow); }
+.loading-logo span      {
+  background: linear-gradient(120deg, #f7df1e, #ffa657);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
 .loading-spinner        {
   width: 28px; height: 28px;
   border: 2px solid var(--border2);

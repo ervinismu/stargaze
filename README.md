@@ -10,7 +10,7 @@ No server. No build step. Open `index.html` and go.
 
 1. Open `index.html` in any modern browser
 2. Enter a GitHub username
-3. *(Optional)* Paste a GitHub token to load up to 2000 repos
+3. *(Optional)* Paste a GitHub token to load up to 2000 repos **and your star lists**
 4. Click **Build Graph →**
 
 Your graph is cached locally — **refreshing the page restores it instantly** without re-fetching from GitHub. Use the **↻ Re-fetch** button in the header to pull fresh data.
@@ -30,11 +30,13 @@ flowchart TD
 
 ### GitHub Token
 
-A token is optional but recommended for users with many stars. It only raises the API rate limit — **no scopes needed**.
+A token is optional but recommended for users with many stars. It raises the API rate limit and **unlocks your star lists** (see below) — **no scopes needed**.
 
 Generate one at [github.com/settings/tokens](https://github.com/settings/tokens):
 - **Classic token** — leave all checkboxes unchecked
 - **Fine-grained token** — no extra permissions needed
+
+Note: lists are fetched via the GraphQL API, which always requires a token. Private lists may not appear depending on your token type.
 
 ---
 
@@ -68,7 +70,9 @@ Edge generation rules:
 
 ### Layout
 
-The graph uses a D3 force simulation. Nodes that share many topics cluster together naturally. Hub nodes (many connections) spread further apart due to degree-aware link distance.
+The graph uses a D3 force simulation. Nodes that share many topics cluster together naturally. Hub nodes (many connections) spread further apart due to degree-aware link distance, and a gentle per-node gravity keeps isolated (unlinked) nodes from drifting to the far edges.
+
+Node positions and your camera stay **stable while you filter and search** — the graph adjusts in place instead of re-laying out from scratch.
 
 ---
 
@@ -80,8 +84,10 @@ The graph uses a D3 force simulation. Nodes that share many topics cluster toget
 | Fit all nodes | **⊡** button (bottom-right) |
 | Pan | Click and drag on empty canvas |
 | Move a node | Drag the node itself |
-| Open repo details | Click a node |
-| Close details | Click empty canvas, or **×** in the panel |
+| Focus a node | Click it — everything except its neighbors dims and the camera glides over |
+| Open repo details | Click a node (opens alongside focus mode) |
+| Exit focus / close panel / clear search | **Esc** (unwinds in that order), or click empty canvas |
+| Jump to search | **/** |
 | Refresh data | **↻ Re-fetch** button in the header |
 | Back to search | **← Reset** button (clears cache) |
 
@@ -92,25 +98,38 @@ The graph uses a D3 force simulation. Nodes that share many topics cluster toget
 ```mermaid
 flowchart TD
     S([Start]) --> L[Pick a Language]
-    L --> T[Topic list updates\nto show only topics\nin that language]
-    T --> TP[Pick a Topic]
-    TP --> G[Graph filters to repos\nmatching BOTH]
-    L --> G2[Graph filters to\nlanguage only]
-    G --> Clear[Click chip × to clear]
+    S --> TP[Pick a Topic]
+    L --> N[Topic list narrows\nto that language]
+    N --> TP
+    L --> G[Graph filters]
+    TP --> G
+    G --> Clear[chip × or Clear all filters]
     Clear --> S
 ```
 
-### Language filter
+### Language filter (multi-select)
 
-Click any language in the left sidebar column. The graph immediately filters to repos of that language. The active language appears as a **chip** in the top-left corner of the canvas — click **×** to clear it.
+Click languages in the left sidebar column — **select as many as you like**. The graph shows repos matching **any** selected language (OR logic). Each selected language gets its own **chip** in the top-left corner of the canvas — click **×** on a chip to remove just that one. The list is sorted by repo count and has its own **Filter…** box to narrow long lists.
 
-### Topic filter
+### Topic filter (multi-select)
 
-Topic list is **dependent on the selected language** — pick a language first. The topic list then shows only topics that appear in repos of that language, with counts. Combining language + topic uses **AND logic** (repo must match both).
+Topics work the same way: pick several, and repos matching **any** of them are shown (OR logic), each with its own chip. The topic list works **with or without a language selected** — by default it shows your top topics across all repos, and selecting languages narrows it to topics within those languages (union). Topics are sorted by count and have their own **Filter…** box too.
+
+Filters from **different** groups combine with **AND logic** — e.g. (JavaScript **or** Python) **and** (cli **or** tui) **and** star list "self-hosted" **and** search text.
+
+### Star lists (your GitHub categories)
+
+If you organize your stars with GitHub **Lists** (e.g. "self-hosted"), they appear as a **Star Lists** section in the sidebar — with the same names you gave them on GitHub. Click one to filter the graph to just that category; it stacks with the language/topic/search filters (AND logic) and shows its own chip.
+
+Lists require a token (GitHub only exposes them via the authenticated GraphQL API). If you loaded the graph without one, the **Star Lists** section stays visible with a small token box — paste a token there and hit **Load star lists**, no Reset or refetch needed. Once loaded, they're cached locally alongside your repos, so they keep working on later visits even without re-entering the token. Counts show only repos that are actually in your graph.
+
+### Clear all filters
+
+The **Clear all filters** button appears under the filter columns whenever any filter or search is active, and resets everything (language, topic, search, node focus) in one click.
 
 ### Search bar
 
-The search box (top bar) filters nodes in real time across:
+The search box (top bar, **/** to jump to it) filters nodes in real time across:
 - Repository name
 - Description
 - Topics
@@ -118,6 +137,10 @@ The search box (top bar) filters nodes in real time across:
 - Full name (`owner/repo`)
 
 Search works independently of the language/topic filters — all three stack together.
+
+## Themes
+
+The app supports **dark and light themes**. The **Dark mode** toggle lives in the sidebar's Display section. The default follows your OS preference (`prefers-color-scheme`); your choice is saved locally and applied instantly on the next visit, before the page paints (no flash). The graph canvas, landing starfield, and all panels adapt to the theme.
 
 ---
 
@@ -147,12 +170,13 @@ css/
 js/
   config.js         — language colors, helper functions
   state.js          — shared mutable state
+  starfield.js      — landing page starfield animation
   api.js            — GitHub fetch, localStorage cache, graph data construction
-  sidebar.js        — filter lists, active chips, topic list
+  sidebar.js        — filter lists, active chips, topic list, clear-all
   tooltip.js        — hover tooltip
   detail.js         — repo detail panel
-  renderer.js       — Canvas 2D drawing, force simulation, zoom, drag
-  events.js         — event wiring, session auto-restore
+  renderer.js       — Canvas 2D drawing, force simulation, zoom, drag, focus mode
+  events.js         — event wiring, session auto-restore, keyboard shortcuts
 ```
 
 ---

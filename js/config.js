@@ -11,3 +11,18 @@ const LANG_COLORS = {
 function langColor(l){ return LANG_COLORS[l] || LANG_COLORS.default; }
 function nodeR(d){ return Math.max(4, Math.min(10, 4 + Math.log2(Math.max(1, d.stars)) * 0.7)); }
 function fmtNum(n){ return n >= 1000 ? (n/1000).toFixed(1)+'k' : String(n); }
+
+// ── Canvas colors follow the active theme — single source of truth is CSS ──
+// Read once per rebuildGraph() (getComputedStyle every frame would be wasteful).
+function themeColors(){
+  const cs = getComputedStyle(document.documentElement);
+  const v = name => cs.getPropertyValue(name).trim();
+  return {
+    bg:      v('--bg'),
+    grid:    v('--grid'),
+    link:    v('--link'),
+    label:   v('--label'),
+    labelHi: v('--label-hi'),
+    star:    v('--star'),
+  };
+}

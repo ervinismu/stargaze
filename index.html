@@ -4,8 +4,16 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Stargaze — GitHub Stars Graph</title>
-<!-- Runs immediately (no defer) to suppress landing flash when restoring from cache -->
-<script>if(localStorage.getItem('stargaze_username'))document.documentElement.classList.add('restoring');</script>
+<!-- Runs immediately (no defer): applies the saved theme before first paint (no flash)
+     and suppresses the landing flash when restoring from cache -->
+<script>
+try{
+  document.documentElement.dataset.theme =
+    localStorage.getItem('stargaze_theme')
+    || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+}catch(e){}
+if(localStorage.getItem('stargaze_username'))document.documentElement.classList.add('restoring');
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&display=swap" rel="stylesheet" />
@@ -28,6 +36,7 @@
 
 <!-- Landing -->
 <div id="landing">
+  <canvas id="starfield"></canvas>
   <div class="landing-box">
     <div class="landing-eyebrow">GitHub Stars Explorer</div>
     <h1 class="landing-title">Star<span>gaze</span></h1>
@@ -40,7 +49,7 @@
     <button class="btn-primary" id="btn-load">Build Graph →</button>
     <div class="landing-hint">
       Without token: up to 600 repos · 60 req/hr limit<br>
-      With token: up to 2000 repos · no special scopes needed<br><br>
+      With token: up to 2000 repos · your star lists · no scopes needed<br><br>
       Generate at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a>
     </div>
   </div>
@@ -61,13 +70,20 @@
       <div class="filter-columns">
         <div class="filter-col">
           <div class="sidebar-label">Languages</div>
+          <input class="list-filter" id="lang-filter" placeholder="Filter…" autocomplete="off" spellcheck="false" />
           <div id="lang-list"></div>
         </div>
         <div class="filter-divider"></div>
         <div class="filter-col">
           <div class="sidebar-label">Topics</div>
+          <input class="list-filter" id="topic-filter" placeholder="Filter…" autocomplete="off" spellcheck="false" />
           <div id="topic-list"></div>
         </div>
+      </div>
+      <button class="btn-clear" id="btn-clear-filters" style="display:none">Clear all filters</button>
+      <div class="stats-block" id="lists-block" style="display:none">
+        <div class="sidebar-label">Star Lists</div>
+        <div id="list-list"></div>
       </div>
       <div class="stats-block">
         <div class="sidebar-label">Stats</div>
@@ -80,6 +96,11 @@
           <input type="checkbox" id="toggle-labels" checked />
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
         </label>
+        <label class="toggle-row">
+          <span class="toggle-label">Dark mode</span>
+          <input type="checkbox" id="toggle-theme" checked />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
       </div>
     </div>
     <div id="canvas">
@@ -87,13 +108,14 @@
       <div id="active-filters">
         <div id="lang-chip"></div>
         <div id="topic-chip"></div>
+        <div id="list-chip"></div>
       </div>
       <div id="zoom-controls">
         <button id="btn-zoom-in"  title="Zoom in">+</button>
         <button id="btn-zoom-out" title="Zoom out">−</button>
         <button id="btn-zoom-fit" title="Fit to screen">⊡</button>
       </div>
-      <div id="hint">scroll to zoom · drag background to move · drag node to reposition · tap node for details</div>
+      <div id="hint">scroll to zoom · drag to pan · click node to focus · <b>/</b> to search · <b>esc</b> to close</div>
       <div id="footer">made with ♥ by <a href="https://github.com/ervinismu" target="_blank" rel="noreferrer">@ervinismu</a></div>
     </div>
     <div id="detail">
@@ -133,6 +155,7 @@
 
 <script src="js/config.js" defer></script>
 <script src="js/state.js" defer></script>
+<script src="js/starfield.js" defer></script>
 <script src="js/api.js" defer></script>
 <script src="js/sidebar.js" defer></script>
 <script src="js/tooltip.js" defer></script>

@@ -48,6 +48,107 @@ function expandRepo(c){
   };
 }
 
+// ── Star lists (GitHub "Lists" categories) — GraphQL only, requires a token ──
+// The REST API has no lists endpoint, so we use api.github.com/graphql.
+// Lists are cached alongside the repos so token-less cache restores keep them.
+const LISTS_QUERY = `query($login:String!){
+  user(login:$login){
+    lists(first:50){
+      nodes{
+        id name description
+        items(first:100){
+          nodes{ ... on Repository { nameWithOwner } }
+          pageInfo{ hasNextPage endCursor }
+        }
+      }
+    }
+  }
+}`;
+const LIST_ITEMS_QUERY = `query($id:ID!,$cursor:String){
+  node(id:$id){ ... on UserList {
+    items(first:100, after:$cursor){
+      nodes{ ... on Repository { nameWithOwner } }
+      pageInfo{ hasNextPage endCursor }
+    }
+  } }
+}`;
+
+async function gql(query, variables, token){
+  const res = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: { 'Authorization': 'bearer ' + token, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  });
+  if(!res.ok) return null;
+  const json = await res.json();
+  return json.data || null; // GraphQL may return partial data alongside errors
+}
+
+// Returns [{ name, description, repos: [fullName,…] }], or null on failure (silent —
+// lists are an optional enhancement and must never break the main load flow).
+async function fetchUserLists(username, token){
+  try {
+    const data = await gql(LISTS_QUERY, { login: username }, token);
+    const nodes = data?.user?.lists?.nodes;
+    if(!nodes) return null;
+
+    const lists = nodes.map(l => ({
+      name:        l.name,
+      description: l.description || '',
+      repos:       l.items.nodes.map(r => r.nameWithOwner),
+      _id:         l.id,
+      _cursor:     l.items.pageInfo.hasNextPage ? l.items.pageInfo.endCursor : null,
+    }));
+
+    // Paginate lists with more than 100 items (cap at 1000 items per list)
+    await Promise.all(lists.map(async l => {
+      for(let page = 0; page < 9 && l._cursor; page++){
+        const d = await gql(LIST_ITEMS_QUERY, { id: l._id, cursor: l._cursor }, token);
+        const items = d?.node?.items;
+        if(!items) break;
+        l.repos.push(...items.nodes.map(r => r.nameWithOwner));
+        l._cursor = items.pageInfo.hasNextPage ? items.pageInfo.endCursor : null;
+      }
+      delete l._id; delete l._cursor;
+    }));
+
+    return lists;
+  } catch(e){ return null; }
+}
+
+// Fire-and-forget: fetch lists and update state + cache when done.
+async function refreshLists(username, token){
+  listsStatus = 'loading';
+  refreshListsBlock();
+  const lists = await fetchUserLists(username, token);
+  if(lists === null){
+    listsStatus = 'failed';
+    console.warn('[stargaze] Star lists could not be loaded. Check that your token is valid and not blocked (lists require the GraphQL API). The graph itself is unaffected.');
+    refreshListsBlock();
+    return; // keep whatever we already have (cache or empty)
+  }
+  listsStatus = 'ready';
+  allLists = lists;
+
+  // Merge into the existing cache without touching the repos payload
+  try {
+    const raw = localStorage.getItem(REPO_CACHE_KEY);
+    if(raw){
+      const cache = JSON.parse(raw);
+      cache.lists = lists;
+      localStorage.setItem(REPO_CACHE_KEY, JSON.stringify(cache));
+    }
+  } catch(e){ /* quota exceeded — lists not cached */ }
+
+  // The active list filter may no longer exist after a refresh
+  if(filterList && !allLists.some(l => l.name === filterList)){
+    filterList = null;
+    setChip('list-chip', null);
+    rebuildGraph();
+  }
+  refreshListsBlock();
+}
+
 // ── GitHub API fetch ──
 async function loadRepos(forceRefetch = false){
   const username = document.getElementById('input-username').value.trim();
@@ -69,8 +170,12 @@ async function loadRepos(forceRefetch = false){
         const cache = JSON.parse(raw);
         if(cache.username === username && Array.isArray(cache.repos) && cache.repos.length){
           allRepos  = cache.repos.map(expandRepo);
+          allLists  = Array.isArray(cache.lists) ? cache.lists : [];
+          if(allLists.length) listsStatus = 'ready';
           graphData = buildGraph(allRepos);
+          posCache.clear(); savedTransform = null;
           showApp(username);
+          if(token) refreshLists(username, token); // refresh lists in the background
           return;
         }
       }
@@ -119,15 +224,22 @@ async function loadRepos(forceRefetch = false){
     } catch(e){ /* quota exceeded — cache skipped */ }
 
     graphData = buildGraph(allRepos);
+    posCache.clear(); savedTransform = null;
     localStorage.setItem('stargaze_username', username);
     if(refetchBtn){ refetchBtn.disabled = false; refetchBtn.textContent = '↻ Re-fetch'; }
     showApp(username);
+    if(token) refreshLists(username, token);
   } catch(e){
     errBox.textContent = e.message;
     errBox.style.display = 'block';
     if(inApp){
       if(refetchBtn){ refetchBtn.disabled = false; refetchBtn.textContent = '↻ Re-fetch'; }
     } else {
+      // Auto-restore hides the landing page via html.restoring — if the fetch fails
+      // we must bring the landing back or the user is stuck on the loading overlay.
+      document.documentElement.classList.remove('restoring');
+      landing.style.display = 'flex';
+      startStarfield();
       btn.disabled = false; btn.textContent = 'Build Graph →';
       inpUser.disabled = false; inpToken.disabled = false;
     }

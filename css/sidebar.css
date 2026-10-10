@@ -9,14 +9,24 @@
 .filter-divider { width: 1px; background: var(--border); margin: 0 8px; flex-shrink: 0; }
 .sidebar-label  { font-size: 10px; color: var(--text4); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; padding-left: 4px; }
 
+/* ── In-list search inputs ── */
+.list-filter {
+  width: 100%; padding: 4px 8px; margin-bottom: 8px;
+  background: var(--border); border: 1px solid var(--border2); border-radius: 5px;
+  color: var(--text); font-family: inherit; font-size: 11px; outline: none;
+  transition: border-color 0.15s;
+}
+.list-filter:focus        { border-color: var(--accent); }
+.list-filter::placeholder { color: var(--text4); }
+
 /* ── Filter list items ── */
 .lang-item {
   display: flex; align-items: center; gap: 8px; padding: 5px 8px;
   border-radius: 5px; cursor: pointer; margin-bottom: 1px;
   border: 1px solid transparent; transition: all 0.12s;
 }
-.lang-item:hover            { background: #1c2128; }
-.lang-item.active           { background: #1c2128; border-color: #2d333b; }
+.lang-item:hover            { background: var(--hover-bg); }
+.lang-item.active           { background: var(--hover-bg); border-color: var(--active-border); }
 .lang-item.active .lang-name { color: var(--text); }
 .lang-dot   { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .lang-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text2); }
@@ -29,7 +39,8 @@
 /* ── Active filter chips (float over canvas) ── */
 #active-filters         { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 5px; pointer-events: none; z-index: 10; }
 #active-filters > div   { pointer-events: auto; }
-.active-chip            { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 10px; background: #0d1117cc; border: 1px solid #2d4a7a; backdrop-filter: blur(4px); border-radius: 20px; font-size: 11px; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.active-chip            { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px 4px 10px; background: var(--chip-bg); border: 1px solid var(--chip-border); backdrop-filter: blur(4px); border-radius: 20px; font-size: 11px; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.4); animation: chip-in 0.18s ease; }
+@keyframes chip-in      { from { transform: translateY(-6px); opacity: 0; } }
 .active-chip-name       { white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 .active-chip-clear      { cursor: pointer; color: var(--text3); font-size: 14px; line-height: 1; }
 .active-chip-clear:hover { color: var(--text); }
@@ -48,4 +59,5 @@
 .stat-row    { display: flex; justify-content: space-between; padding: 4px; font-size: 12px; }
 .stat-label  { color: var(--text4); }
 .stat-val    { color: var(--text2); font-weight: 600; }
-.btn-clear   { width: 100%; margin-top: 10px; padding: 6px; background: transparent; border: 1px solid var(--border3); border-radius: 5px; color: var(--text3); cursor: pointer; font-family: inherit; font-size: 11px; }
+.btn-clear   { width: 100%; margin-top: 10px; padding: 6px; background: transparent; border: 1px solid var(--border3); border-radius: 5px; color: var(--text3); cursor: pointer; font-family: inherit; font-size: 11px; transition: all 0.15s; }
+.btn-clear:hover { color: var(--text); border-color: var(--text2); }
